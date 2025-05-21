@@ -55,6 +55,7 @@ if not IS_TESTING:
 # Bot configuration
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHANNEL_LINK = os.getenv("CHANNEL_LINK")
+BOT_LINK = os.getenv("BOT_LINK")
 
 # Database configuration
 DB_HOST = os.getenv("DB_HOST", "localhost")
@@ -68,7 +69,7 @@ DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t", "yes", "y")
 
 # Validate required environment variables only if not in testing mode
 if not IS_TESTING:
-    required_vars = ["BOT_TOKEN", "CHANNEL_LINK", "DB_NAME", "DB_USER", "DB_PASSWORD"]
+    required_vars = ["BOT_TOKEN", "CHANNEL_LINK", "DB_NAME", "DB_USER", "DB_PASSWORD", "BOT_LINK"]
     missing_vars = [var for var in required_vars if not globals()[var]]
 
     if missing_vars:

@@ -26,6 +26,7 @@ from .config import (
     BOT_TOKEN,
     CHANNEL_LINK,
     DEBUG,
+    BOT_LINK,
 )
 from .db_setup import get_db_connection
 
@@ -364,14 +365,14 @@ def create_code(message):
     # First, try to get an existing code
     existing_code = grab_referral_code(sender_username)
     if existing_code:
-        reply = f"You have already created a referral link! Your referral link is:\n{CHANNEL_LINK}?start={existing_code}"
+        reply = f"You have already created a referral link! Your referral link is:\n{BOT_LINK}?start={existing_code}"
         bot.reply_to(message, reply)
         return
 
     # If no existing code, create a new one
     unique_code = create_referral_code(sender_username)
     if unique_code:
-        reply = f"Your referral link is:\n{CHANNEL_LINK}?start={unique_code}"
+        reply = f"Your referral link is:\n{BOT_LINK}?start={unique_code}"
     else:
         reply = "An error occurred. Please try again later."
 
