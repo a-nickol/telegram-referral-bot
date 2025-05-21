@@ -165,6 +165,7 @@ def add_user(sender_user_id: int, referrer: str) -> bool:
 
     Args:
         sender_user_id (int): The user ID to add.
+        referrer (str): The referrer for the user.
 
     Returns:
         bool: True if the user was added successfully, False otherwise.
