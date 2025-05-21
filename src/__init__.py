@@ -210,7 +210,7 @@ def increment_counter(username: str) -> bool:
         return False
 
 
-def check_referrer_for_user(sender_user_id: int) -> bool:
+def check_referrer_for_user(sender_user_id: int) -> str:
     """
     Check if the user is new (not in the used_referrals table).
 
@@ -218,7 +218,7 @@ def check_referrer_for_user(sender_user_id: int) -> bool:
         sender_user_id (int): The user ID to check.
 
     Returns:
-        bool: True if the user is new, False otherwise.
+        str: the referrer, None otherwise.
     """
     try:
         with get_db_connection() as conn:
