@@ -28,8 +28,8 @@ from .config import (
     DEBUG,
     BOT_LINK,
 )
-from .db_setup import get_db_connection
-
+from .db_setup import get_db_cursor
+        
 # Set up logging
 logging.basicConfig(
     level=logging.DEBUG if DEBUG else logging.INFO,
@@ -74,15 +74,14 @@ def get_username_from_storage(unique_code: str) -> Optional[str]:
         Optional[str]: The associated username, or None if not found.
     """
     try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT username FROM referrals WHERE unique_code = %s",
-                    (unique_code,),
-                )
-                result = cur.fetchone()
-                logger.debug(f"get_username_from_storage result: {result}")
-                return result[0] if result else None
+        with get_db_cursor() as cur:
+            cur.execute(
+                "SELECT username FROM referrals WHERE unique_code = %s",
+                (unique_code,),
+            )
+            result = cur.fetchone()
+            logger.debug(f"get_username_from_storage result: {result}")
+            return result[0] if result else None
     except Exception as e:
         logger.error(f"Error in get_username_from_storage: {e}")
         return None
@@ -100,17 +99,16 @@ def grab_referral_code(username: str) -> Optional[str]:
     """
     logger.debug(f"Attempting to grab referral code for user: {username}")
     try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT unique_code FROM referrals WHERE username = %s", (username,)
-                )
-                result = cur.fetchone()
-                if result:
-                    return result[0]
-                else:
-                    logger.debug(f"No referral code found for user: {username}")
-                    return None
+        with get_db_cursor() as cur:
+            cur.execute(
+                "SELECT unique_code FROM referrals WHERE username = %s", (username,)
+            )
+            result = cur.fetchone()
+            if result:
+                return result[0]
+            else:
+                logger.debug(f"No referral code found for user: {username}")
+                return None
     except Exception as e:
         logger.error(f"Error in grab_referral_code: {e}")
         return None
@@ -139,21 +137,20 @@ def create_referral_code(sender_username: str) -> Optional[str]:
     logger.debug(f"Creating new referral code for {sender_username}")
     try:
         unique_code = create_unique_code()
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "INSERT INTO referrals (username, unique_code, count) VALUES (%s, %s, 0) ON CONFLICT (username) DO NOTHING RETURNING unique_code",
-                    (sender_username, unique_code),
+        with get_db_cursor() as cur:
+            cur.execute(
+                "INSERT INTO referrals (username, unique_code, count) VALUES (%s, %s, 0) ON CONFLICT (username) DO NOTHING RETURNING unique_code",
+                (sender_username, unique_code),
+            )
+            result = cur.fetchone()
+            if result:
+                logger.debug(
+                    f"Successfully inserted code {unique_code} for user {sender_username}"
                 )
-                result = cur.fetchone()
-                if result:
-                    logger.debug(
-                        f"Successfully inserted code {unique_code} for user {sender_username}"
-                    )
-                    return unique_code
-                else:
-                    logger.debug(f"Code already exists for user {sender_username}")
-                    return grab_referral_code(sender_username)
+                return unique_code
+            else:
+                logger.debug(f"Code already exists for user {sender_username}")
+                return grab_referral_code(sender_username)
     except Exception as e:
         logger.error(f"Error in create_referral_code: {e}")
         return None
@@ -171,16 +168,15 @@ def add_user(sender_user_id: int, referrer: str) -> bool:
         bool: True if the user was added successfully, False otherwise.
     """
     try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    INSERT INTO used_referrals (user_id, referrer)
-                    VALUES (%s, %s)
-                    ON CONFLICT (user_id) DO NOTHING
-                    """,
-                    (sender_user_id, referrer),
-                )
+        with get_db_cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO used_referrals (user_id, referrer)
+                VALUES (%s, %s)
+                ON CONFLICT (user_id) DO NOTHING
+                """,
+                (sender_user_id, referrer),
+            )
         return True
     except Exception as e:
         logger.error(f"Error in add_user: {e}")
@@ -198,13 +194,12 @@ def increment_counter(username: str) -> bool:
         bool: True if the count was successfully incremented, False otherwise.
     """
     try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "UPDATE referrals SET count = count + 1 WHERE username = %s",
-                    (username,),
-                )
-                return cur.rowcount > 0
+        with get_db_cursor() as cur:
+            cur.execute(
+                "UPDATE referrals SET count = count + 1 WHERE username = %s",
+                (username,),
+            )
+            return cur.rowcount > 0
     except Exception as e:
         logger.error(f"Error incrementing counter: {e}")
         return False
@@ -221,23 +216,22 @@ def check_referrer_for_user(sender_user_id: int) -> str:
         str: the referrer, None otherwise.
     """
     try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    SELECT referrer
-                    FROM used_referrals
-                    WHERE user_id = %s;
-                    """,
-                    (sender_user_id,),
-                )
-                result = cur.fetchone()
-                logger.debug(
-                    f"check_new_user result for user_id {sender_user_id}: {result}"
-                )
-                if result:
-                    return result[0]
-                return None
+        with get_db_cursor() as cur:
+            cur.execute(
+                """
+                SELECT referrer
+                FROM used_referrals
+                WHERE user_id = %s;
+                """,
+                (sender_user_id,),
+            )
+            result = cur.fetchone()
+            logger.debug(
+                f"check_new_user result for user_id {sender_user_id}: {result}"
+            )
+            if result:
+                return result[0]
+            return None
     except Exception as e:
         logger.error(f"Error in check_new_user: {e}")
         return None
@@ -254,12 +248,11 @@ def check_user_exists(sender_username: str) -> Optional[bool]:
         Optional[bool]: True if the user exists, False if not, None if an error occurred.
     """
     try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT * FROM referrals WHERE username = %s;", (sender_username,)
-                )
-                return cur.fetchone() is not None
+        with get_db_cursor() as cur:
+            cur.execute(
+                "SELECT * FROM referrals WHERE username = %s;", (sender_username,)
+            )
+            return cur.fetchone() is not None
     except Exception as e:
         logger.error(f"Error in check_user_exists: {e}")
         return None
@@ -277,17 +270,16 @@ def get_referral_amount(username: str) -> int:
     """
     logger.debug(f"Getting referral count for user: {username}")
     try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT count FROM referrals WHERE username = %s", (username,)
-                )
-                result = cur.fetchone()
-                if result:
-                    return result[0]
-                else:
-                    logger.debug(f"No referral count found for user: {username}")
-                    return 0
+        with get_db_cursor() as cur:
+            cur.execute(
+                "SELECT count FROM referrals WHERE username = %s", (username,)
+            )
+            result = cur.fetchone()
+            if result:
+                return result[0]
+            else:
+                logger.debug(f"No referral count found for user: {username}")
+                return 0
     except Exception as e:
         logger.error(f"Error in get_referral_amount: {e}")
         return 0
