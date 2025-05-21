@@ -158,7 +158,7 @@ def create_referral_code(sender_username: str) -> Optional[str]:
         return None
 
 
-def add_user(sender_user_id: int) -> bool:
+def add_user(sender_user_id: int, referrer: str) -> bool:
     """
     Add a user to the used_referrals table.
 
@@ -173,11 +173,11 @@ def add_user(sender_user_id: int) -> bool:
             with conn.cursor() as cur:
                 cur.execute(
                     """
-                    INSERT INTO used_referrals (user_id)
-                    VALUES (%s)
+                    INSERT INTO used_referrals (user_id, refferer)
+                    VALUES (%s, %s)
                     ON CONFLICT (user_id) DO NOTHING
                     """,
-                    (sender_user_id,),
+                    (sender_user_id, referrer),
                 )
         return True
     except Exception as e:
@@ -208,7 +208,7 @@ def increment_counter(username: str) -> bool:
         return False
 
 
-def check_new_user(sender_user_id: int) -> bool:
+def check_referrer_for_user(sender_user_id: int) -> bool:
     """
     Check if the user is new (not in the used_referrals table).
 
@@ -223,7 +223,7 @@ def check_new_user(sender_user_id: int) -> bool:
             with conn.cursor() as cur:
                 cur.execute(
                     """
-                    SELECT user_id
+                    SELECT referrer
                     FROM used_referrals
                     WHERE user_id = %s;
                     """,
@@ -313,22 +313,23 @@ def send_welcome(message):
             bot.reply_to(message, "You can not use your own referral link!")
             return
 
-        if referrer_username and check_new_user(user_id):
+        current_referrer = check_referrer_for_user(user_id)
+        if referrer_username and current_referrer is None:
             logger.debug(
                 f"New user detected. Incrementing counter for {referrer_username}"
             )
             increment_result = increment_counter(referrer_username)
             logger.debug(f"Increment result: {increment_result}")
-            add_user_result = add_user(user_id)
+            add_user_result = add_user(user_id, referrer_username)
             logger.debug(f"Add user result: {add_user_result}")
             bot.reply_to(
                 message,
                 f"Hello, you have been referred by: {referrer_username}\nPlease join the Telegram group by clicking this link: {CHANNEL_LINK}",
             )
-        elif referrer_username:
+        elif current_referrer:
             bot.reply_to(
                 message,
-                f"Hello, you have already been referred by someone else!\nPlease join the Telegram group by clicking this link: {CHANNEL_LINK}",
+                f"Hello, you have already been referred: {current_referrer}\nPlease join the Telegram group by clicking this link: {CHANNEL_LINK}",
             )
         else:
             bot.reply_to(
