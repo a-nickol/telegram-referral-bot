@@ -125,7 +125,7 @@ def create_tables():
             cur.execute(
                 """
                 CREATE TABLE IF NOT EXISTS used_referrals (
-                    user_id INTEGER PRIMARY KEY,
+                    user_id BIGINT PRIMARY KEY,
                     referrer VARCHAR(255)
                 )
             """

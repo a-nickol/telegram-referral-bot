@@ -174,7 +174,7 @@ def add_user(sender_user_id: int, referrer: str) -> bool:
             with conn.cursor() as cur:
                 cur.execute(
                     """
-                    INSERT INTO used_referrals (user_id, refferer)
+                    INSERT INTO used_referrals (user_id, referrer)
                     VALUES (%s, %s)
                     ON CONFLICT (user_id) DO NOTHING
                     """,
@@ -234,10 +234,12 @@ def check_referrer_for_user(sender_user_id: int) -> bool:
                 logger.debug(
                     f"check_new_user result for user_id {sender_user_id}: {result}"
                 )
-                return result is None
+                if result:
+                    return result[0]
+                return None
     except Exception as e:
         logger.error(f"Error in check_new_user: {e}")
-        return False
+        return None
 
 
 def check_user_exists(sender_username: str) -> Optional[bool]:
@@ -312,7 +314,7 @@ def send_welcome(message):
 
         if referrer_username == username:
             bot.reply_to(message, "You can not use your own referral link!")
-            return
+            #return
 
         current_referrer = check_referrer_for_user(user_id)
         if referrer_username and current_referrer is None:
