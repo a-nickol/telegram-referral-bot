@@ -315,7 +315,7 @@ def send_welcome(message):
 
         if referrer_username == username:
             bot.reply_to(message, "You can not use your own referral link!")
-            #return
+            return
 
         current_referrer = check_referrer_for_user(user_id)
         if referrer_username and current_referrer is None:
